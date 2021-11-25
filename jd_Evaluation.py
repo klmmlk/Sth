@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # @Time : 2021/11/25 13:58
 # 京东自动评价
-# 新增可选账号评价、更换图片
+# 新增可选账号评价、更换图片、自动下载sendNotify
 '''
 new Env('京东自动评价');
 cron=0 0 8 ? * WED  python3 jd_Evaluation.py
@@ -12,10 +12,18 @@ import random
 import re
 import sys
 import time
-from urllib.parse import unquote
-from sendNotify import send
-import jieba.analyse
 import requests
+from urllib.parse import unquote
+import jieba.analyse
+
+# 检查是否下载sendNotify.py
+if os.path.exists('sendNotify.py') == False:
+    pwd = os.path.dirname(os.path.abspath(__file__)) + os.sep
+    req = requests.get("https://ghproxy.com/https://raw.githubusercontent.com/gys619/jdd/main/sendNotify.py")
+    with open(pwd + 'sendNotify.py', "wb") as f:
+        f.write(req.content)
+from sendNotify import send
+
 
 # 需要评价的账号,输入 pt_pin 如：NeedEvaluation =  ['vdfd','qq345'] 注意是pt_pin;不填则默认全部评价
 NeedEvaluation = []
