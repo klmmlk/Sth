@@ -62,4 +62,4 @@ if __name__ == '__main__':
         tele.sendms(bot_name,massage)
         print('%s已发送'%each_code)
     print('运行完成')
-    os._exit(0)
+    exit(0)
