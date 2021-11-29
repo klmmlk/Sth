@@ -34,7 +34,7 @@ fileNames = {'Bean': '/bean',  # 种豆得豆
 
 ##############################################################
 # 这下面不用管
-# os.chdir(os.path.dirname(os.path.abspath(__file__)))
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 def getEnv():
     reRule = re.compile(r"(?<=pt_pin=).*?(?=;)")
