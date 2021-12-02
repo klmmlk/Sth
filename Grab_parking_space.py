@@ -7,6 +7,8 @@ new Env('自动抢车位');
 cron=0 1 21 ? * sat  python3 Grab_parking_space.py
 '''
 import os, re, time
+import socks
+
 
 try:
     from telethon import TelegramClient
@@ -35,7 +37,7 @@ fileNames = {'Bean': '/bean',  # 种豆得豆
 ##############################################################
 # 这下面不用管
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
+socks.SOCKS5
 def getEnv():
     reRule = re.compile(r"(?<=pt_pin=).*?(?=;)")
     with open('/ql/config/env.sh', 'r', encoding='utf-8') as f:
@@ -60,6 +62,7 @@ def findCode():
 class Telegram:
     def __init__(self, api_id, api_hash, phoneNumber):
         session_name = "id_" + api_id
+        proxy = ()
         self.client = TelegramClient(session_name, api_id, api_hash)
         self.client.start(phoneNumber)
 
