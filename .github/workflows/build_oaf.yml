@@ -26,7 +26,7 @@ jobs:
       - name: Fetch PVE kernel headers
         run: |
           wget http://download.proxmox.com/debian/pve/dists/bookworm/pve-no-subscription/binary-amd64/proxmox-default-kernel_1.1.0_all.deb
-          apt install -y ./proxmox-default-kernel_1.1.0_all.deb
+          sudo apt install -y ./proxmox-default-kernel_1.1.0_all.deb
           wget http://download.proxmox.com/debian/pve/dists/bookworm/pve-no-subscription/binary-amd64/pve-headers_8.4.0_all.deb
           sudo apt install -y ./pve-headers_8.4.0_all.deb
 
