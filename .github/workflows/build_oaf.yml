@@ -8,13 +8,14 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # 推荐使用更新的系统版本
     steps:
       - name: Checkout OpenWrt source
         uses: actions/checkout@v4
         with:
-          repository: openwrt/openwrt  # 替换为你的 OpenWrt/ImmortalWrt 源码仓库
+          repository: openwrt/openwrt  # 替换为你的仓库
           submodules: recursive
+          fetch-depth: 0  # 确保拉取完整历史记录（某些插件需要）
 
       - name: Download OpenAppFilter
         run: |
@@ -28,19 +29,34 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y build-essential libncurses-dev unzip
+          sudo apt install -y build-essential libncurses-dev unzip zstd python3
 
-      - name: Compile OpenAppFilter packages
+      # 缓存加速编译（关键优化）
+      - name: Cache OpenWrt downloads
+        uses: actions/cache@v3
+        with:
+          path: |
+            dl
+            tmp
+          key: ${{ runner.os }}-openwrt-${{ hashFiles('feeds.conf.default') }}
+
+      - name: Update feeds
         run: |
-          make package/OpenAppFilter/luci-app-oaf/compile V=s
-          make package/OpenAppFilter/open-app-filter/compile V=s
-          make package/OpenAppFilter/oaf/compile V=s
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
 
+      # 编译插件（选择性编译）
+      - name: Compile OpenAppFilter
+        run: |
+          make package/OpenAppFilter/{luci-app-oaf,open-app-filter,oaf}/compile V=s
+
+      # 使用 v4 版本的 upload-artifact
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: openappfilter-packages
           path: |
-            bin/packages/*/base/oaf*.ipk
-            bin/packages/*/base/luci-app-oaf*.ipk
-            bin/packages/*/base/open-app-filter*.ipk
+            bin/packages/**/oaf*.ipk
+            bin/packages/**/luci-app-oaf*.ipk
+            bin/packages/**/open-app-filter*.ipk
+          retention-days: 7  # 自动清理旧文件
