@@ -1,0 +1,46 @@
+name: Build OpenAppFilter for OpenWrt
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout OpenWrt source
+        uses: actions/checkout@v4
+        with:
+          repository: openwrt/openwrt  # 替换为你的 OpenWrt/ImmortalWrt 源码仓库
+          submodules: recursive
+
+      - name: Download OpenAppFilter
+        run: |
+          git clone https://github.com/destan19/OpenAppFilter.git package/OpenAppFilter
+
+      - name: Enable OpenAppFilter in config
+        run: |
+          echo "CONFIG_PACKAGE_luci-app-oaf=y" >> .config
+          make defconfig
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential libncurses-dev unzip
+
+      - name: Compile OpenAppFilter packages
+        run: |
+          make package/OpenAppFilter/luci-app-oaf/compile V=s
+          make package/OpenAppFilter/open-app-filter/compile V=s
+          make package/OpenAppFilter/oaf/compile V=s
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: openappfilter-packages
+          path: |
+            bin/packages/*/base/oaf*.ipk
+            bin/packages/*/base/luci-app-oaf*.ipk
+            bin/packages/*/base/open-app-filter*.ipk
