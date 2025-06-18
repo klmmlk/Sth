@@ -1,4 +1,4 @@
-name: Build OpenAppFilter for OpenWrt
+name: Build OpenAppFilter for PVE
 
 on:
   push:
@@ -8,55 +8,56 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04  # 推荐使用更新的系统版本
+    runs-on: ubuntu-22.04
     steps:
+      # 1. 拉取 OpenWrt 源码
       - name: Checkout OpenWrt source
         uses: actions/checkout@v4
         with:
-          repository: openwrt/openwrt  # 替换为你的仓库
+          repository: immortalwrt/immortalwrt  # 替换为你的 ImmortalWrt 仓库
           submodules: recursive
-          fetch-depth: 0  # 确保拉取完整历史记录（某些插件需要）
 
+      # 2. 下载 OpenAppFilter
       - name: Download OpenAppFilter
         run: |
           git clone https://github.com/destan19/OpenAppFilter.git package/OpenAppFilter
 
-      - name: Enable OpenAppFilter in config
+      # 3. 动态获取 PVE 内核版本并下载头文件
+      - name: Fetch PVE kernel headers
         run: |
+          PVE_KERNEL_VERSION="6.8.12-11-pve"  # 替换为你的 PVE 内核版本（通过 `uname -r` 查看）
+          wget http://download.proxmox.com/debian/pve/dists/bookworm/pve-no-subscription/binary-amd64/pve-headers-${PVE_KERNEL_VERSION}.deb
+          sudo apt install -y ./pve-headers-${PVE_KERNEL_VERSION}.deb
+
+      # 4. 配置编译环境（关键步骤）
+      - name: Configure environment
+        run: |
+          # 使用 PVE 内核路径替换 OpenWrt 默认内核路径
+          echo "CONFIG_EXTERNAL_KERNEL_TREE=/usr/src/linux-headers-$(uname -r)" >> .config
           echo "CONFIG_PACKAGE_luci-app-oaf=y" >> .config
+          echo "CONFIG_PACKAGE_open-app-filter=y" >> .config
+          echo "CONFIG_PACKAGE_oaf=y" >> .config
           make defconfig
 
+      # 5. 安装编译依赖
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y build-essential libncurses-dev unzip zstd python3
+          sudo apt install -y build-essential libelf-dev libssl-dev flex bison
 
-      # 缓存加速编译（关键优化）
-      - name: Cache OpenWrt downloads
-        uses: actions/cache@v3
-        with:
-          path: |
-            dl
-            tmp
-          key: ${{ runner.os }}-openwrt-${{ hashFiles('feeds.conf.default') }}
-
-      - name: Update feeds
+      # 6. 编译 OpenAppFilter（强制使用 PVE 内核）
+      - name: Compile with PVE kernel
         run: |
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
+          make package/OpenAppFilter/oaf/compile \
+            KERNEL_DIR=/usr/src/linux-headers-$(uname -r) \
+            ARCH=x86_64 \
+            V=s
 
-      # 编译插件（选择性编译）
-      - name: Compile OpenAppFilter
-        run: |
-          make package/OpenAppFilter/{luci-app-oaf,open-app-filter,oaf}/compile V=s
-
-      # 使用 v4 版本的 upload-artifact
+      # 7. 上传生成的模块和 IPK
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: openappfilter-packages
+          name: pve-openappfilter
           path: |
             bin/packages/**/oaf*.ipk
-            bin/packages/**/luci-app-oaf*.ipk
-            bin/packages/**/open-app-filter*.ipk
-          retention-days: 7  # 自动清理旧文件
+            package/OpenAppFilter/oaf/src/*.ko  # 内核模块
