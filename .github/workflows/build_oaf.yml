@@ -25,7 +25,8 @@ jobs:
       # 3. 动态获取 PVE 内核版本并下载头文件
       - name: Fetch PVE kernel headers
         run: |
-          PVE_KERNEL_VERSION="6.8.12-11-pve"  # 替换为你的 PVE 内核版本（通过 `uname -r` 查看）
+          wget http://download.proxmox.com/debian/pve/dists/bookworm/pve-no-subscription/binary-amd64/proxmox-default-kernel_1.1.0_all.deb
+          apt install -y ./proxmox-default-kernel_1.1.0_all.deb
           wget http://download.proxmox.com/debian/pve/dists/bookworm/pve-no-subscription/binary-amd64/pve-headers_8.4.0_all.deb
           sudo apt install -y ./pve-headers_8.4.0_all.deb
 
